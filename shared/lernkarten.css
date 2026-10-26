@@ -1,0 +1,59 @@
+/* Lernkarten: DIN A5 quer bedruckt, in der Mitte gefaltet = DIN A6 hoch (105 × 148 mm).
+   Blatt 1 (Außenseite): links Rückseite (Musterlösung) | rechts Vorderseite (Aufgabe)
+   Blatt 2 (Innenseite): links Theorie + Merksatz       | rechts Formeln, Merksätze, typische Fehler
+   Duplex: „Wenden an der kurzen Kante“ (bei A5 quer: um die senkrechte Mittelachse). */
+:root { --karte-bg:#ffffff; --karte-fg:#1b2030; --karte-dim:#5b6478; --karte-line:#cfd6e6; }
+body.lernkarten { background:#e5e9f3; }
+.lk-kopf { max-width:1000px; margin:0 auto; padding:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
+.lk-kopf h1 { font-size:1.2rem; }
+.lk-hinweis { max-width:1000px; margin:0 auto 10px; padding:0 16px; color:var(--dim); font-size:.86rem; }
+.lk-auswahl { display:flex; gap:6px; flex-wrap:wrap; max-width:1000px; margin:0 auto 12px; padding:0 16px; }
+.lk-auswahl .knopf[aria-pressed="true"] { background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
+.lk-bahn { max-width:1000px; margin:0 auto; padding:0 16px 30px; overflow-x:auto; }
+.lk-beschriftung { font:600 .72rem var(--font-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--dim); margin:14px 0 6px; }
+.blatt { width:210mm; height:148mm; display:grid; grid-template-columns:105mm 105mm; background:var(--karte-bg); color:var(--karte-fg); box-shadow:0 2px 10px rgba(20,30,60,.18); position:relative; break-after:page; page-break-after:always; margin:0 0 6px; }
+.seite { position:relative; width:105mm; height:148mm; padding:5.5mm 6mm 8.5mm; overflow:hidden; font:8.1pt/1.38 var(--font-ui); display:flex; flex-direction:column; gap:1.8mm; }
+.seite + .seite { border-left:.25mm dashed #9aa5c0; }          /* Falzlinie */
+.seite p { margin:0 0 1.2mm; max-width:none; }
+.seite ul, .seite ol { margin:0 0 1.2mm; padding-left:4.2mm; }
+.seite li { margin:0 0 .7mm; }
+.k-band { display:flex; justify-content:space-between; align-items:baseline; gap:3mm; font:700 6.3pt var(--font-mono); letter-spacing:.05em; text-transform:uppercase; color:var(--karte-dim); border-bottom:.35mm solid var(--akz,var(--accent)); padding-bottom:1mm; }
+.k-band b { color:var(--akz,var(--accent)); }
+.k-titel { font:700 11pt/1.2 var(--font-head); margin:.6mm 0 .8mm; }
+.k-box { border:.3mm solid var(--akz,var(--accent)); border-radius:1.6mm; padding:1.6mm 2.2mm; background:color-mix(in srgb,var(--akz,var(--accent)) 7%,#fff); }
+.k-box .k-kopf { font:700 6.3pt var(--font-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--akz,var(--accent)); margin-bottom:.8mm; }
+.k-box .katex { font-size:1em; }
+.k-fuss { position:absolute; left:6mm; right:6mm; bottom:2.2mm; font:5pt/1.25 var(--font-ui); color:var(--karte-dim); }
+.vorne { --akz:#2454c9; } .hinten { --akz:#0e7c66; } .innen-l { --akz:#6d3fb0; } .innen-r { --akz:#a16207; }
+.seite .aufgabe-text b.op { font-weight:800; }
+.seite .teil { border:0; padding:0; margin:0 0 1.4mm; }
+.seite .teil .l { font:700 8pt var(--font-mono); color:var(--akz); margin-right:1.5mm; }
+.seite .schritt { margin:0 0 1mm; }
+.seite .kommentar { color:var(--karte-dim); font-size:7.3pt; margin:0 0 1mm; }
+.seite .ergebnis { border-top:.25mm solid var(--karte-line); padding-top:1mm; margin:1mm 0 0; font-weight:600; }
+.seite .katex-display { margin:.7mm 0; overflow:visible; }
+.seite table { border-collapse:collapse; width:100%; font-size:7.4pt; margin:.6mm 0; }
+.seite th, .seite td { border:.2mm solid var(--karte-line); padding:.7mm 1.4mm; text-align:center; }
+.seite th { background:#f4f6fb; }
+.seite .c1, .seite .c2, .seite .c3, .seite .c4, .seite .c5 { padding:0 .6mm; }
+.platzhalter-leer { flex:1; border:.25mm dashed var(--karte-line); border-radius:1.5mm; display:grid; place-items:center; color:var(--karte-dim); font-size:7pt; }
+.lk-warn { display:none; background:#fde2e2; color:#7a1b1b; padding:6px 10px; border-radius:6px; font-size:.8rem; margin:4px 0; }
+.lk-warn.an { display:block; }
+@page { size:210mm 148mm; margin:0; }
+@media print {
+  html, body { background:#fff !important; }
+  body.lernkarten > *:not(.lk-bahn) { display:none !important; }
+  .lk-bahn { padding:0; max-width:none; overflow:visible; margin:0; }
+  .lk-beschriftung, .lk-warn { display:none !important; }
+  .blatt { box-shadow:none; margin:0; }
+  .blatt, .seite { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .lk-bahn .nur-bildschirm { display:none !important; }
+  .karte-aus { display:none !important; }
+}
+
+.seite.vorne { font-size:9.4pt; line-height:1.45; }
+.seite.vorne .k-titel { font-size:12.5pt; }
+.seite.vorne .teil { margin-bottom:2.2mm; }
+.k-arbeit { flex:1; margin-bottom:2mm; border:.25mm dashed var(--karte-line); border-radius:1.5mm; color:#9aa5c0; font-size:6.5pt; padding:1mm 2mm;
+  background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 6.9mm, var(--karte-line) 6.9mm, var(--karte-line) 7mm); }
+.seite.vorne .kommentar { font-size:7.6pt; }

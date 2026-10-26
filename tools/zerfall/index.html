@@ -1,0 +1,420 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Radioaktiver Zerfall</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout wie im Funktionen-Explorer: Bühne (Gesamtgrafik) links, Steuerpult rechts; auf dem Handy untereinander.
+   Zwei Darstellungen: dunkel (3Blue1Brown-Stil, Standard) und hell (Pearson-Stil), umschaltbar. */
+:root{
+  --bg:#07090b; --stage:#000000; --panel:#0e1318; --field:#161d24; --field-hover:#1d2730; --line:#24313c;
+  --fg:#ececec; --dim:#8d99a4; --grid:#29ABCA; --grid-fine:#1C758A; --gitter-alpha:.6; --gitter-fein-alpha:.45;
+  --atom:#f2f2f2;
+  --c1:#FC6255; --c1-light:#FFB4AC;     /* Zerfall 1: RED_C */
+  --c2:#58C4DD; --c2-light:#B4E6F3;     /* Zerfall 2: BLUE_C */
+  --accent:#58C4DD; --on-accent:#05080a; --lw:2.6;
+  --font-math:"STIX Two Text","Latin Modern Roman","Cambria Math","Times New Roman",serif;
+  --font-ui:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  color-scheme:dark;
+}
+:root[data-design="pearson"]{
+  --bg:#eef1f9; --stage:#ffffff; --panel:#ffffff; --field:#f4f6fb; --field-hover:#e7edfc; --line:#dbe0ee;
+  --fg:#1b2030; --dim:#5b6478; --grid:#aab8d4; --grid-fine:#d5dced;
+  --atom:#000000;
+  --c1:#d62828; --c1-light:#f3a1a1;
+  --c2:#2454c9; --c2-light:#9db6ec;
+  --accent:#2454c9; --on-accent:#ffffff; --lw:2.4;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font:14px/1.4 var(--font-ui);background:var(--bg);color:var(--fg);
+  padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{margin:0 0 12px;font-size:1.25rem}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:14px;align-items:start}
+@media (max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}}
+.stage{background:var(--stage);border:1px solid var(--line);border-radius:6px;padding:6px}
+#chart{width:100%;height:auto;display:block}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;min-width:0}
+:root[data-design="pearson"] .panel,:root[data-design="pearson"] .stage{border-radius:10px;box-shadow:0 1px 3px rgba(20,30,60,.07)}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-bottom:8px}
+.seg button{border:0;border-radius:0;min-height:36px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"],.seg button[aria-pressed="true"]:hover:not(:disabled){background:var(--accent);color:var(--on-accent)}
+.cap{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:2px 0 4px}
+button{font:600 13px var(--font-ui);color:var(--fg);background:var(--field);border:1px solid var(--line);
+  border-radius:4px;padding:8px 12px;cursor:pointer;min-height:40px}
+button:hover:not(:disabled){background:var(--field-hover)}
+button.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+label{display:flex;justify-content:space-between;gap:8px;font-weight:600;margin-top:14px}
+label output{font-variant-numeric:tabular-nums}
+.l1{color:var(--c1)} .l2{color:var(--c2)}
+input[type=range]{width:100%;margin:6px 0 0;accent-color:var(--accent)}
+#th1{accent-color:var(--c1)} #th2{accent-color:var(--c2)}
+.scale{display:flex;justify-content:space-between;font-size:.78rem;color:var(--dim)}
+.row{display:flex;gap:8px;margin-top:14px}
+.row button{flex:1}
+.stats{margin:14px 0 0;padding:0;list-style:none}
+.stats li{display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding:4px 0;font-variant-numeric:tabular-nums}
+.hint{font-size:.78rem;color:var(--dim);margin:12px 0 0}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;font-size:.74rem}
+#note{font-size:.85rem;color:var(--dim);margin:8px 0 0;min-height:1.2em}
+</style>
+
+<h1 id="title"></h1>
+<div class="layout">
+  <section class="stage">
+    <svg id="chart" viewBox="0 0 1000 740" role="img"></svg>
+  </section>
+
+  <aside class="panel">
+    <div class="cap" id="capDesign"></div>
+    <div class="seg" id="designSeg">
+      <button type="button" id="dDark"></button><button type="button" id="dLight"></button>
+    </div>
+    <div class="cap" id="capLang"></div>
+    <div class="seg" id="langSeg">
+      <button type="button" id="lDe">Deutsch</button><button type="button" id="lUk">Українська</button>
+    </div>
+
+    <label class="l1" for="th1"><span id="th1Label"></span><output id="th1Out" for="th1"></output></label>
+    <input type="range" id="th1" min="10" max="600" step="10" value="60">
+    <div class="scale"><span id="sc1Min"></span><span id="sc1Max"></span></div>
+
+    <label class="l2" for="th2"><span id="th2Label"></span><output id="th2Out" for="th2"></output></label>
+    <input type="range" id="th2" min="0" max="600" step="10" value="0">
+    <div class="scale"><span id="sc2Min"></span><span id="sc2Max"></span></div>
+
+    <label for="speed"><span id="speedLabel"></span><output id="speedOut" for="speed"></output></label>
+    <input type="range" id="speed" min="0" max="3" step="1" value="0">
+    <div class="scale"><span>×1</span><span>×5</span><span>×10</span><span>×30</span></div>
+
+    <div class="row">
+      <button id="startBtn" class="primary" type="button"></button>
+      <button id="resetBtn" type="button"></button>
+    </div>
+
+    <ul class="stats">
+      <li><span id="stT"></span><b id="vT"></b></li>
+      <li class="l1"><span id="stN1"></span><b id="vN1"></b></li>
+      <li class="l2" id="liN2"><span id="stN2"></span><b id="vN2"></b></li>
+    </ul>
+    <p id="note"></p>
+    <p class="hint" id="keys"></p>
+  </aside>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var I18N = {
+  de:{
+    title:"Radioaktiver Zerfall einer unbekannten Substanz",
+    capDesign:"Darstellung", dark:"Dunkel", light:"Hell", capLang:"Sprache",
+    th1Label:"Halbwertszeit Zerfall 1", th2Label:"Halbwertszeit Zerfall 2", speedLabel:"Geschwindigkeit",
+    off:"aus", start:"Start", pause:"Pause", resume:"Weiter", finished:"Beendet", reset:"Zurücksetzen",
+    stT:"Zeit t", stN1:"Atome Zerfall 1 (übrig)", stN2:"Atome Zerfall 2 (übrig)",
+    keys:"Tastatur: <kbd>Leertaste</kbd> Start/Pause · <kbd>R</kbd> Zurücksetzen · <kbd>←</kbd>/<kbd>→</kbd> am Regler Halbwertszeit · <kbd>T</kbd> Darstellung · <kbd>L</kbd> Sprache",
+    yAxis:"Masse M in mol", xAxis:"Zeit t in s",
+    chartAria:"Zerfallsdiagramm: Masse M in mol über der Zeit t in Sekunden, mit Atomrastern und Zerfallsgleichungen",
+    sim:"Simulation", eq:"Gleichung", decay:"Zerfall",
+    lockedNote:"Die Halbwertszeiten können nur vor dem Start (bzw. nach dem Zurücksetzen) geändert werden.",
+    doneNote:"Alle Atome sind zerfallen – die Simulation ist beendet.",
+    min:"min", s:"s", mol:"mol", sym:"t", sub:"h"
+  },
+  uk:{
+    title:"Радіоактивний розпад невідомої речовини",
+    capDesign:"Вигляд", dark:"Темний", light:"Світлий", capLang:"Мова",
+    th1Label:"Період піврозпаду, розпад 1", th2Label:"Період піврозпаду, розпад 2", speedLabel:"Швидкість",
+    off:"вимк.", start:"Старт", pause:"Пауза", resume:"Продовжити", finished:"Завершено", reset:"Скинути",
+    stT:"Час t", stN1:"Атоми розпаду 1 (залишилось)", stN2:"Атоми розпаду 2 (залишилось)",
+    keys:"Клавіатура: <kbd>Пробіл</kbd> старт/пауза · <kbd>R</kbd> скинути · <kbd>←</kbd>/<kbd>→</kbd> на повзунку — період піврозпаду · <kbd>T</kbd> вигляд · <kbd>L</kbd> мова",
+    yAxis:"Маса M, моль", xAxis:"Час t, с",
+    chartAria:"Діаграма розпаду: маса M у молях залежно від часу t у секундах, із сітками атомів і рівняннями розпаду",
+    sim:"Симуляція", eq:"Рівняння", decay:"Розпад",
+    lockedNote:"Періоди піврозпаду можна змінити лише до старту (або після скидання).",
+    doneNote:"Усі атоми розпалися — симуляцію завершено.",
+    min:"хв", s:"с", mol:"моль", sym:"T", sub:"½"
+  }
+};
+
+var N0 = 100, M0 = 1, SPEEDS = [1,5,10,30], NS = "http://www.w3.org/2000/svg";
+var lang = "de", design = "dark";
+var D, t, running, started, last, raf;      // D = [Zerfall 1, Zerfall 2]
+
+function store(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function load(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+var $ = function(id){ return document.getElementById(id); };
+function tr(k){ return I18N[lang][k]; }
+function num(x,d){ return x.toFixed(d).replace(".",","); }
+function el(name, attrs, parent){
+  var e = document.createElementNS(NS,name);
+  for(var k in attrs) e.setAttribute(k, attrs[k]);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+function fmtTime(sec){
+  if(sec===0) return tr("off");
+  var m = Math.floor(sec/60), s = sec-m*60;
+  if(m===0) return s+" "+tr("s");
+  return m+" "+tr("min")+(s? " "+s+" "+tr("s"):"");
+}
+var thEl=[$("th1"),$("th2")], speedEl=$("speed");
+function thOf(i){ return +thEl[i].value; }
+function two(){ return thOf(1)>0; }
+
+/* ---------- Simulation ---------- */
+function newDecay(){
+  var a=[]; for(var i=0;i<N0;i++) a.push(true);
+  return {alive:a, N:N0, hist:[[0,N0]], done:false};
+}
+function resetSim(){
+  cancelAnimationFrame(raf);
+  D = [newDecay(), newDecay()];
+  t = 0; running = false; started = false;
+  thEl[0].value = 60; thEl[1].value = 0; speedEl.value = 0;
+  render();
+}
+function isFinished(){ return D[0].done && (!two() || D[1].done); }
+function stepDecay(d, h, dt){
+  if(d.done) return;
+  var p = 1 - Math.pow(2, -dt/h);
+  for(var i=0;i<N0;i++){
+    if(d.alive[i] && Math.random() < p){
+      d.alive[i] = false;
+      d.hist.push([t, d.N]); d.N--; d.hist.push([t, d.N]);
+    }
+  }
+}
+function frame(now){
+  if(!running) return;
+  var dt = Math.min((now-last)/1000, 0.1) * SPEEDS[+speedEl.value];
+  last = now;
+  for(var i=0;i<2;i++){
+    if(i===1 && !two()) continue;
+    stepDecay(D[i], thOf(i), dt);
+  }
+  t += dt;
+  for(var j=0;j<2;j++){
+    if(D[j].N===0 && !D[j].done){ D[j].done = true; D[j].hist.push([t,0]); }
+  }
+  if(isFinished()) running = false;
+  render();
+  if(running) raf = requestAnimationFrame(frame);
+}
+function toggle(){
+  if(isFinished()) return;
+  running = !running;
+  if(running){ started = true; last = performance.now(); raf = requestAnimationFrame(frame); }
+  else cancelAnimationFrame(raf);
+  render();
+}
+
+/* ---------- Gesamtgrafik ---------- */
+var svg = $("chart");
+var W=1000, H=740, BAND=205, L=84, R=24, T=BAND+22, PH=385, PW=W-L-R, AX=T+PH;
+var COL = [["var(--c1)","var(--c1-light)"],["var(--c2)","var(--c2-light)"]];
+
+function txt(parent,x,y,str,a){
+  var o={x:x,y:y,fill:"var(--fg)","font-size":15,"font-family":"var(--font-ui)"};
+  for(var k in a) o[k]=a[k];
+  var e=el("text",o,parent); e.textContent=str; return e;
+}
+/* Formeltext aus Segmenten {s, l:Höhe in em, z:Größenfaktor} */
+function mt(parent,x,y,anchor,segs,fs,fill){
+  var e=el("text",{x:x,y:y,"text-anchor":anchor,fill:fill,"font-size":fs,"font-family":"var(--font-math)"},parent), lv=0;
+  segs.forEach(function(g){
+    var l=g.l||0, ts=el("tspan",{"font-size":fs*(g.z||1)},e);
+    if(l!==lv) ts.setAttribute("dy", (-(l-lv)*fs).toFixed(1));
+    lv=l; ts.textContent=g.s;
+  });
+  return e;
+}
+function expSegs(den, z){            // Exponent t/t_h bzw. t/60 s
+  return den.sub!==undefined
+    ? [{s:"t/"+tr("sym"),l:.55,z:.7},{s:den.sub,l:.38,z:.5}]
+    : [{s:"t/"+den.v,l:.55,z:.7}];
+}
+function mLeft(i){
+  var s=[{s:"M"}];
+  if(i!==undefined && two()) s.push({s:String(i+1),l:-.28,z:.7});
+  s.push({s:"(t)"}); return s;
+}
+
+function niceStep(range,target){
+  var raw=range/target, mag=Math.pow(10,Math.floor(Math.log(raw)/Math.LN10)), f=raw/mag;
+  return (f<1.5?1:f<3.5?2:f<7.5?5:10)*mag;
+}
+
+function drawMatrix(g, i, fx){
+  var d=D[i], c=COL[i][0];
+  el("rect",{x:fx,y:10,width:176,height:186,rx:6,fill:"var(--stage)",stroke:c,"stroke-width":2},g);
+  txt(g,fx+88,29,tr("decay")+" "+(i+1)+" · "+tr("sym")+" "+tr("sub")+" = "+fmtTime(thOf(i)).replace(" "," "),
+      {"text-anchor":"middle","font-size":13,fill:c,"font-weight":600});
+  for(var k=0;k<N0;k++){
+    el("circle",{cx:fx+16+(k%10)*16, cy:44+Math.floor(k/10)*15.2, r:5.3,
+      fill: d.alive[k] ? "var(--atom)" : c},g);
+  }
+}
+
+function drawEquations(g){
+  var x0=640, fs=25;
+  function row(y,left,right,fill){
+    mt(g,x0-20,y,"end",left,fs,fill);
+    mt(g,x0,y,"middle",[{s:"="}],fs,fill);
+    mt(g,x0+20,y,"start",right,fs,fill);
+  }
+  row(60,mLeft(),
+    [{s:"M"},{s:"0",l:-.28,z:.7},{s:" · (½)"}].concat(expSegs({sub:tr("sub")})),"var(--fg)");
+  for(var i=0;i<2;i++){
+    if(i===1 && !two()) break;
+    row(118+i*52, mLeft(i),
+      [{s:"1\u00A0"+tr("mol")+"\u00A0·\u00A0(½)"}].concat(expSegs({v:thOf(i)+" "+tr("s")})), COL[i][0]);
+  }
+}
+
+function drawPlot(g){
+  var i, h1=thOf(0), h=two()?Math.max(h1,thOf(1)):h1;
+  var xmax=h*Math.max(8,Math.ceil(t/h)+1);
+  var X=function(v){return L+v/xmax*PW;}, Y=function(v){return T+(1-v/M0)*PH;};
+
+  for(i=0;i<=10;i++){
+    el("line",{x1:L,x2:L+PW,y1:Y(i/10),y2:Y(i/10),stroke:"var(--grid-fine)","stroke-opacity":"var(--gitter-fein-alpha)"},g);
+    txt(g,L-10,Y(i/10)+5,num(i/10,1),{"text-anchor":"end","font-size":13,fill:"var(--dim)"});
+  }
+  var xs=niceStep(xmax,9);
+  for(var x=0;x<=xmax+1e-9;x+=xs){
+    el("line",{x1:X(x),x2:X(x),y1:T,y2:AX,stroke:"var(--grid-fine)","stroke-opacity":"var(--gitter-fein-alpha)"},g);
+    txt(g,X(x),AX+20,String(Math.round(x)),{"text-anchor":"middle","font-size":13,fill:"var(--dim)"});
+  }
+  el("line",{x1:L,x2:L+PW,y1:AX,y2:AX,stroke:"var(--fg)","stroke-width":1.6},g);
+  el("line",{x1:L,x2:L,y1:T,y2:AX,stroke:"var(--fg)","stroke-width":1.6},g);
+  txt(g,L+PW/2,H-8,tr("xAxis"),{"text-anchor":"middle","font-size":17,"font-family":"var(--font-math)"});
+  txt(g,22,T+PH/2,tr("yAxis"),{"text-anchor":"middle","font-size":17,"font-family":"var(--font-math)",transform:"rotate(-90 22 "+(T+PH/2)+")"});
+
+  for(i=0;i<2;i++){
+    if(i===1 && !two()) break;
+    var h_i=thOf(i), c=COL[i][0], cl=COL[i][1], lastX=-99;
+    // Hilfslinien nach jeder Halbwertszeit (bis 5)
+    for(var k=1;k<=5;k++){
+      if(t<k*h_i) break;
+      var px=X(k*h_i), py=Y(M0/Math.pow(2,k));
+      var st={stroke:"var(--dim)","stroke-dasharray":"6 5","stroke-width":1.2};
+      el("line",{x1:L,x2:px,y1:py,y2:py,stroke:st.stroke,"stroke-dasharray":st["stroke-dasharray"],"stroke-width":1.2},g);
+      el("line",{x1:px,x2:px,y1:py,y2:AX,stroke:st.stroke,"stroke-dasharray":st["stroke-dasharray"],"stroke-width":1.2},g);
+      el("circle",{cx:px,cy:py,r:4.5,fill:"var(--stage)",stroke:c,"stroke-width":2},g);
+      if(px-lastX>30){
+        var e=txt(g,px,AX+44+i*20,k+" "+tr("sym"),{"text-anchor":"middle","font-weight":700,fill:c,"font-family":"var(--font-math)"});
+        var sub=el("tspan",{"font-size":11,dy:4},e);
+        sub.textContent=tr("sub")+(two()?(lang==="de"?",":",")+(i+1):"");
+        lastX=px;
+      }
+    }
+  }
+  // Verläufe: erst die Gleichungen (hell), darüber die Simulationen
+  for(i=0;i<2;i++){
+    if(i===1 && !two()) break;
+    var hh=thOf(i), dd="", n=200;
+    for(var q=0;q<=n;q++){
+      var tau=t*q/n;
+      dd+=(q?"L":"M")+X(tau).toFixed(1)+" "+Y(M0*Math.pow(2,-tau/hh)).toFixed(1);
+    }
+    el("path",{d:dd,fill:"none",stroke:COL[i][1],"stroke-width":5,"stroke-linecap":"round","stroke-linejoin":"round"},g);
+  }
+  for(i=0;i<2;i++){
+    if(i===1 && !two()) break;
+    var d=D[i], p="";
+    for(var j=0;j<d.hist.length;j++) p+=(j?"L":"M")+X(d.hist[j][0]).toFixed(1)+" "+Y(d.hist[j][1]/N0*M0).toFixed(1);
+    if(!d.done) p+="L"+X(t).toFixed(1)+" "+Y(d.N/N0*M0).toFixed(1);
+    el("path",{d:p,fill:"none",stroke:COL[i][0],"stroke-width":"var(--lw)","stroke-linejoin":"round"},g);
+  }
+  // Legende oben rechts im Diagramm
+  var ly=T+18, lx=L+PW-250;
+  for(i=0;i<2;i++){
+    if(i===1 && !two()) break;
+    el("line",{x1:lx,x2:lx+30,y1:ly,y2:ly,stroke:COL[i][0],"stroke-width":3},g);
+    txt(g,lx+38,ly+5,tr("sim")+" "+(i+1),{"font-size":14,fill:"var(--fg)"});
+    el("line",{x1:lx+130,x2:lx+160,y1:ly,y2:ly,stroke:COL[i][1],"stroke-width":5,"stroke-linecap":"round"},g);
+    txt(g,lx+168,ly+5,tr("eq")+" "+(i+1),{"font-size":14,fill:"var(--fg)"});
+    ly+=24;
+  }
+}
+
+function drawAll(){
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  svg.setAttribute("aria-label",tr("chartAria"));
+  var g=el("g",{},svg);
+  drawMatrix(g,0,14);
+  if(two()) drawMatrix(g,1,202);
+  drawEquations(g);
+  el("line",{x1:14,x2:W-14,y1:BAND,y2:BAND,stroke:"var(--line)"},g);
+  drawPlot(g);
+}
+
+/* ---------- Oberfläche ---------- */
+function render(){
+  drawAll();
+  $("th1Out").textContent=fmtTime(thOf(0));
+  $("th2Out").textContent=fmtTime(thOf(1));
+  $("speedOut").textContent="×"+SPEEDS[+speedEl.value];
+  $("vT").textContent=num(t,1)+" "+tr("s");
+  $("vN1").textContent=D[0].N+" / "+N0+" · "+num(D[0].N/N0*M0,2)+"\u00A0"+tr("mol");
+  $("vN2").textContent=D[1].N+" / "+N0+" · "+num(D[1].N/N0*M0,2)+"\u00A0"+tr("mol");
+  $("liN2").hidden=!two();
+  var fin=isFinished();
+  $("startBtn").textContent=fin?tr("finished"):running?tr("pause"):started?tr("resume"):tr("start");
+  $("startBtn").disabled=fin;
+  thEl[0].disabled=thEl[1].disabled=started;
+  $("note").textContent=fin?tr("doneNote"):started?tr("lockedNote"):"";
+}
+function applyLang(){
+  var d=I18N[lang];
+  document.documentElement.lang=lang;
+  document.title=lang==="de"?"Radioaktiver Zerfall":"Радіоактивний розпад";
+  $("title").textContent=d.title;
+  $("capDesign").textContent=d.capDesign; $("capLang").textContent=d.capLang;
+  $("dDark").textContent=d.dark; $("dLight").textContent=d.light;
+  $("th1Label").textContent=d.th1Label; $("th2Label").textContent=d.th2Label; $("speedLabel").textContent=d.speedLabel;
+  $("sc1Min").textContent="10 "+d.s; $("sc1Max").textContent="10 "+d.min;
+  $("sc2Min").textContent="0 ("+d.off+")"; $("sc2Max").textContent="10 "+d.min;
+  $("resetBtn").textContent=d.reset;
+  $("stT").textContent=d.stT; $("stN1").textContent=d.stN1; $("stN2").textContent=d.stN2;
+  $("keys").innerHTML=d.keys;
+  $("lDe").setAttribute("aria-pressed",lang==="de"); $("lUk").setAttribute("aria-pressed",lang==="uk");
+  render();
+}
+function applyDesign(){
+  if(design==="pearson") document.documentElement.setAttribute("data-design","pearson");
+  else document.documentElement.removeAttribute("data-design");
+  $("dDark").setAttribute("aria-pressed",design==="dark"); $("dLight").setAttribute("aria-pressed",design==="pearson");
+}
+function setLang(l){ lang=l; store("rz-lang",l); applyLang(); }
+function setDesign(m){ design=m; store("rz-design",m); applyDesign(); }
+
+$("startBtn").addEventListener("click",toggle);
+$("resetBtn").addEventListener("click",resetSim);
+$("lDe").addEventListener("click",function(){setLang("de");});
+$("lUk").addEventListener("click",function(){setLang("uk");});
+$("dDark").addEventListener("click",function(){setDesign("dark");});
+$("dLight").addEventListener("click",function(){setDesign("pearson");});
+[thEl[0],thEl[1],speedEl].forEach(function(e){ e.addEventListener("input",render); });
+document.addEventListener("keydown",function(e){
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  var k=e.key.toLowerCase();
+  if(e.key===" " && e.target.tagName!=="BUTTON"){ e.preventDefault(); toggle(); }
+  else if(k==="r"||k==="к") resetSim();
+  else if(k==="t"||k==="е") setDesign(design==="dark"?"pearson":"dark");
+  else if(k==="l"||k==="д") setLang(lang==="de"?"uk":"de");
+});
+
+lang = load("rz-lang")==="uk" ? "uk" : "de";
+design = load("rz-design")==="pearson" ? "pearson" : "dark";
+applyDesign();
+resetSim();
+applyLang();
+})();
+</script>
+
+
+</body></html>
