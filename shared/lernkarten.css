@@ -57,3 +57,15 @@ body.lernkarten { background:#e5e9f3; }
 .k-arbeit { flex:1; margin-bottom:2mm; border:.25mm dashed var(--karte-line); border-radius:1.5mm; color:#9aa5c0; font-size:6.5pt; padding:1mm 2mm;
   background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 6.9mm, var(--karte-line) 6.9mm, var(--karte-line) 7mm); }
 .seite.vorne .kommentar { font-size:7.6pt; }
+
+.k-theorie { font-size:9pt; line-height:1.45; }
+.k-theorie p { margin:0 0 1.8mm; }
+.k-theorie h4 { font:700 8.4pt var(--font-head); color:var(--akz); margin:2.2mm 0 .8mm; }
+.k-bild { margin:.4mm 0 .8mm; border:.2mm solid var(--karte-line); border-radius:1.4mm; padding:.8mm 1.2mm .4mm; background:#fbfcff; }
+.k-bild svg { max-height:46mm; }
+.k-bildtext { font-size:6.8pt; color:var(--karte-dim); line-height:1.25; text-align:center; }
+.k-bildtext .katex { font-size:1em; }
+.seite.innen-l .k-box ul { margin-bottom:0; }
+.seite.innen-r .k-box li { margin-bottom:.9mm; }
+.seite.innen-r .k-box p { margin:0 0 .9mm; }
+[hidden]{display:none!important}
