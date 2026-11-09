@@ -17,9 +17,13 @@ async function kern() {
   py = await loadPyodide({ indexURL: PYODIDE });
   py.FS.mkdirTree("/home/pyodide/formeleditor");
   for (const d of DATEIEN) {
-    const r = await fetch(QUELLEN + d, { cache: "no-cache" });
-    if (!r.ok) throw new Error("Quelldatei fehlt: " + d);
-    py.FS.writeFile("/home/pyodide/formeleditor/" + (ZIELNAME[d] || d), await r.text());
+    let text = self.FE_QUELLEN && self.FE_QUELLEN[d];      // eingebettete Quellen (Doppelklick/file://)
+    if (text == null) {
+      const r = await fetch(QUELLEN + d, { cache: "no-cache" });
+      if (!r.ok) throw new Error("Quelldatei fehlt: " + d);
+      text = await r.text();
+    }
+    py.FS.writeFile("/home/pyodide/formeleditor/" + (ZIELNAME[d] || d), text);
   }
   py.runPython("import sys\nif '/home/pyodide' not in sys.path: sys.path.insert(0, '/home/pyodide')\nfrom formeleditor.webapi import ruf_json");
   ruf = py.globals.get("ruf_json");

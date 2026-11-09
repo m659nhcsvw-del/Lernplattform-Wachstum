@@ -14,6 +14,7 @@
 <script src="katex/katex.min.js"></script>
 <script src="ziehen.js"></script>
 <script src="formelbild.js"></script>
+<script src="py/quellen.js"></script>
 <style>
 :root {
   --bg: #0e0f12; --panel: #17181d; --panel2: #1f2026; --linie: #2c2e36; --text: #ececec; --dim: #9a9ca6;
@@ -200,7 +201,10 @@ async function serverDa() {
 function starteWorker() {
   const q = new URLSearchParams(location.search), p = new URLSearchParams();
   if (q.get("pyodide")) p.set("pyodide", q.get("pyodide"));
-  worker = new Worker("pyworker.js" + ([...p].length ? "?" + p : ""));
+  if (location.protocol === "file:" && window.FE_WORKER) {      // Doppelklick: Worker aus eingebettetem Code starten
+    const kopf = "self.FE_QUELLEN=" + JSON.stringify(window.FE_QUELLEN) + ";\n";
+    worker = new Worker(URL.createObjectURL(new Blob([kopf + window.FE_WORKER], { type: "text/javascript" })));
+  } else worker = new Worker("pyworker.js" + ([...p].length ? "?" + p : ""));
   worker.onmessage = ev => {
     const m = ev.data;
     if (m.status) return kernStatus(m.status);
